@@ -152,15 +152,25 @@ def viterbi(x, S, train_set):
     return max(possible_tags.items(), key=operator.itemgetter(1))[0]    # return max key by value in word_set
 
 def get_all_tags(sentences):
+    """returns a dictionary of all tags per a certain word"""
     word_tags = defaultdict(set)
     for sentence in sentences:
         for word, pos in sentence:
             word_tags[word].add(pos)
     return word_tags
 
+def initialize_S(train_set):
+#     add from test set with unknown tag as well??
+    S = set()
+    for sentence in train_set:
+        for word, pos in sentence:
+            S.add(pos)
+    return S
+
 
 def Qc(train_set, test_set):
-    S = get_all_tags(train_set)
+    S = initialize_S(train_set)     #Rois version
+    # S = get_all_tags(train_set)   #Tomers version
     for sentence in test_set:
         x = [t[0] for t in sentence]
         print(x)
