@@ -6,6 +6,7 @@ from collections import defaultdict, Counter
 import operator
 
 START, STOP = "START", "STOP"
+DYNAMIC_STOP = "*"
 
 def generate_dictionary(sentences):
     """Generate dictionary: {word_type: {POS:counter}}
@@ -131,25 +132,83 @@ def init_word_set(S):
     return dict
 
 
-def pi(k, v, S, x, train_set):
-    if k == 1: return 1
-    word_set = init_word_set(S)
-    for w in S:
-        word_set[w] = pi(k-1, w, S, x, train_set) * trans_prob(v, w, S) * emission_prob(x[k], v, train_set)
+# def pi(k, v, S, x, train_set):
+#     if k == 1: return 1
+#     word_set = init_word_set(S)
+#     for w in S:
+#         word_set[w] = pi(k-1, w, S, x, train_set) * trans_prob(v, w, S) * emission_prob(x[k], v, train_set)
+#
+#     return max(word_set.items(), key=operator.itemgetter(1))[0]     # return max key by value in word_set
 
-    return max(word_set.items(), key=operator.itemgetter(1))[0]     # return max key by value in word_set
+# def viterbi(x, S, train_set):
+#     pi_table = [[]]
+#     n = len(x)
+#     for k in range(n):
+#         for v in S:
+#             pi_table[k][v] = pi(k,v,S,x, train_set=train_set)
+#     possible_tags = init_word_set(S)
+#     for v in S:
+#         possible_tags[v] = pi(n, v, S, x, train_set) * trans_prob(STOP, v, S)
+#
+#     return max(possible_tags.items(), key=operator.itemgetter(1))[0]    # return max key by value in word_set
 
-def viterbi(x, S, train_set):
-    pi_table = [[]]
-    n = len(x)
-    for k in range(n):
-        for v in S:
-            pi_table[k][v] = pi(k,v,S,x, train_set=train_set)
-    possible_tags = init_word_set(S)
-    for v in S:
-        possible_tags[v] = pi(n, v, S, x, train_set) * trans_prob(STOP, v, S)
+def create_viterbi_table(x, S, train_set):
+    """
 
-    return max(possible_tags.items(), key=operator.itemgetter(1))[0]    # return max key by value in word_set
+    :param x: Sentence x1-xn
+    :param S: All possible tags
+    :param train_set: list of sentences
+    :return: Best next pos
+    """
+    pi = []
+    S = list(S)
+    print(S)
+    print('length of S is ')
+    print(len(S))
+    pi.append([1]*len(S))
+    for k in range(1 ,len(x)):
+        pi.append([(0,0)]*len(S))
+        print('k=' + str(k))
+        for j in range(len(S)):
+            print("J = "+ str(j))
+            max_index = None
+            max_value = 0
+            e = emission_prob(x[k], S[j], train_set)
+            for i in range(len(S)):
+                cur = pi[k-1][i] * trans_prob(S[j], S[i], train_set) * e
+                if cur > max_value:
+                    max_value = cur
+                    max_index = i
+            pi[k][j] = (max_value, max_index)
+    return pi
+
+def viterbi(x,S,train_set):
+    print("viterbi")
+    pi = create_viterbi_table(x,S,train_set)
+    print(pi)
+    tag_vec = []
+    max_prob = 0
+    best_index = 0
+    k = -1
+    for i in pi[k]:
+        prob, previous_ind = pi[k][i]
+        if prob > max_prob:
+            best_index = i
+            max_prob = prob
+
+    tag_vec.append(S[best_index])
+    previous_ind = pi[k][best_index][1]
+    k -= 1
+    while -k < len(x):
+        print("while")
+        tag_vec.append(S[previous_ind])
+        previous_ind = pi[k][previous_ind][1]
+        k -= 1
+
+    tag_vec = tag_vec.reverse()
+    return tag_vec
+
+
 
 def get_all_tags(sentences):
     """returns a dictionary of all tags per a certain word"""
@@ -171,10 +230,12 @@ def initialize_S(train_set):
 def Qc(train_set, test_set):
     S = initialize_S(train_set)     #Rois version
     # S = get_all_tags(train_set)   #Tomers version
+    viterbi_res= []
     for sentence in test_set:
         x = [t[0] for t in sentence]
-        print(x)
-        viterbi(x,S,train_set)
+        viterbi_tags = viterbi(x, S, train_set)
+        print(viterbi_tags)
+        viterbi_res.append(viterbi_tags)
 
 
 
@@ -183,9 +244,10 @@ def main():
     threshold = int(len(tagged_news) * 0.1)
     train_news = tagged_news[:-threshold]
     test_news = tagged_news[-threshold:]
-    a = get_all_tags(train_news)
+
+    # a = get_all_tags(train_news)
     # Qb(train_news, test_news)
-    # Qc(train_set=train_news, test_set=test_news)
+    Qc(train_set=train_news, test_set=test_news)
 
 
 if __name__ == '__main__':
