@@ -4,6 +4,7 @@ import pandas as pd
 from nltk.corpus import brown
 from collections import defaultdict, Counter
 import operator
+import probabilities
 
 START, STOP = "START", "STOP"
 DYNAMIC_STOP = "*"
@@ -57,50 +58,13 @@ def Qb(train_news, test_news):
     print(error)
 
 
-def trans_prob(cur_tag, prev_tag, set):
-    """
-    run over all pairs of 2 consecutive tags in corpus
-    :param cur_tag:
-    :param prev_tag:
-    :return:
-    """
-    numerator = 0
-    denom = 0
-    prev = START
-    for sentence in set:
-        for word, tag in sentence:
-            if word == START: continue
-            if tag == cur_tag:
-                if prev_tag == prev:
-                    numerator += 1
-                denom += 1
-            prev_tag = tag
-    return float(numerator/denom)
+
 
 
 def pad_training_set(train_set):
     """pad training set with START values"""
     for sentence in train_set:
         sentence.insert(0, (START, START))
-
-
-def emission_prob(x, y, set, add_one=False):
-    """
-    :param word:
-    :param tag:
-    :return: the emission probability
-    """
-    numerator = 0
-    denom = 0
-    for sentence in set:
-        for word, tag in sentence:
-            if tag == y:
-                if word == x:
-                    numerator += 1
-                denom += 1
-    # if add_one: TODO
-        # return float((numerator + 1)/(denom + get_delta()))
-    return float(numerator/denom)
 
 
 #
@@ -152,7 +116,8 @@ def init_word_set(S):
 #
 #     return max(possible_tags.items(), key=operator.itemgetter(1))[0]    # return max key by value in word_set
 
-def create_viterbi_table(x, S, train_set):
+
+def create_viterbi_table(x, probs):
     """
 
     :param x: Sentence x1-xn
@@ -161,21 +126,20 @@ def create_viterbi_table(x, S, train_set):
     :return: Best next pos
     """
     pi = []
-    S = list(S)
-    print(S)
+
     print('length of S is ')
-    print(len(S))
-    pi.append([1]*len(S))
+    print(probs.S_len)
+    pi.append([1]*probs.S_len)
     for k in range(1 ,len(x)):
-        pi.append([(0,0)]*len(S))
+        pi.append([(0,0)]*probs.S_len)
         print('k=' + str(k))
-        for j in range(len(S)):
+        for j in range(probs.S_len):
             print("J = "+ str(j))
             max_index = None
             max_value = 0
-            e = emission_prob(x[k], S[j], train_set)
-            for i in range(len(S)):
-                cur = pi[k-1][i] * trans_prob(S[j], S[i], train_set) * e
+            e = probs.emission_table[k][j]
+            for i in range(probs.S_len):
+                cur = pi[k-1][i] * probs.emission_table[j][i] * e
                 if cur > max_value:
                     max_value = cur
                     max_index = i
@@ -183,8 +147,11 @@ def create_viterbi_table(x, S, train_set):
     return pi
 
 def viterbi(x,S,train_set):
+    probs = probabilities.Probabilities(S)
+    probs.generate_emission_table(x, train_set)
+    probs.generate_transition_table(train_set)
     print("viterbi")
-    pi = create_viterbi_table(x,S,train_set)
+    pi = create_viterbi_table(x, probs)
     print(pi)
     tag_vec = []
     max_prob = 0
