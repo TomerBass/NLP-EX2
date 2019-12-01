@@ -9,7 +9,9 @@ import probabilities
 START, STOP = "START", "STOP"
 DYNAMIC_STOP = "*"
 
-def generate_dictionary(sentences):
+################# QUESTION b##################################
+
+def generate_dictionary(self, sentences):
     """Generate dictionary: {word_type: {POS:counter}}
     sentences is a list of sentences, each sentence is list of (word, POS)
     tuples."""
@@ -58,7 +60,7 @@ def Qb(train_news, test_news):
     print(error)
 
 
-
+################# QUESTION C ##################################
 
 
 def pad_training_set(train_set):
@@ -119,27 +121,26 @@ def init_word_set(S):
 
 def create_viterbi_table(x, probs):
     """
-
     :param x: Sentence x1-xn
     :param S: All possible tags
     :param train_set: list of sentences
     :return: Best next pos
+    pi tuples: (value, index)
     """
     pi = []
-
-    print('length of S is ')
-    print(probs.S_len)
-    pi.append([1]*probs.S_len)
-    for k in range(1 ,len(x)):
-        pi.append([(0,0)]*probs.S_len)
+    pi.append([(1,0)]*probs.S_len)
+    for k in range(1, len(x)):
+        pi.append([(0, 0)]*probs.S_len)
         print('k=' + str(k))
         for j in range(probs.S_len):
-            print("J = "+ str(j))
+            # print("J = " + str(j))
             max_index = None
             max_value = 0
-            e = probs.emission_table[k][j]
+            e = probs.e(x[k], probs.S_list[j])
             for i in range(probs.S_len):
-                cur = pi[k-1][i] * probs.emission_table[j][i] * e
+                q = probs.q(probs.S_list[j], probs.S_list[i])
+                kkk = pi[k-1][i]
+                cur = pi[k-1][i][0] * q * e
                 if cur > max_value:
                     max_value = cur
                     max_index = i
@@ -147,9 +148,7 @@ def create_viterbi_table(x, probs):
     return pi
 
 def viterbi(x,S,train_set):
-    probs = probabilities.Probabilities(S)
-    probs.generate_emission_table(x, train_set)
-    probs.generate_transition_table(train_set)
+    probs = probabilities.Probabilities(S, train_set)
     print("viterbi")
     pi = create_viterbi_table(x, probs)
     print(pi)
@@ -157,7 +156,7 @@ def viterbi(x,S,train_set):
     max_prob = 0
     best_index = 0
     k = -1
-    for i in pi[k]:
+    for i in range(len(pi[k])):
         prob, previous_ind = pi[k][i]
         if prob > max_prob:
             best_index = i
@@ -196,25 +195,24 @@ def initialize_S(train_set):
 
 def Qc(train_set, test_set):
     S = initialize_S(train_set)     #Rois version
-    # S = get_all_tags(train_set)   #Tomers version
-    viterbi_res= []
+    viterbi_res = []
     for sentence in test_set:
         x = [t[0] for t in sentence]
         viterbi_tags = viterbi(x, S, train_set)
         print(viterbi_tags)
         viterbi_res.append(viterbi_tags)
 
-
+###################################################################
 
 def main():
     tagged_news = (brown.tagged_sents(categories='news'))
     threshold = int(len(tagged_news) * 0.1)
     train_news = tagged_news[:-threshold]
     test_news = tagged_news[-threshold:]
-
     # a = get_all_tags(train_news)
     # Qb(train_news, test_news)
-    Qc(train_set=train_news, test_set=test_news)
+    # Qc(train_set=train_news, test_set=test_news)
+    Qc(train_news,test_news)
 
 
 if __name__ == '__main__':
