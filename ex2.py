@@ -131,10 +131,10 @@ def create_viterbi_table(x, probs):
     pi.append([(1,0)]*probs.S_len)
     for k in range(1, len(x)):
         pi.append([(0, 0)]*probs.S_len)
-        print('k=' + str(k))
+        # print('k=' + str(k))
         for j in range(probs.S_len):
             # print("J = " + str(j))
-            max_index = None
+            max_index = 0 #TODO yesterday it was inited to NONE and gave errors..
             max_value = 0
             e = probs.e(x[k], probs.S_list[j])
             for i in range(probs.S_len):
@@ -143,31 +143,35 @@ def create_viterbi_table(x, probs):
                 cur = pi[k-1][i][0] * q * e
                 if cur > max_value:
                     max_value = cur
-                    max_index = i
+                    max_index = i #means i is the best tag!
             pi[k][j] = (max_value, max_index)
     return pi
 
 def viterbi(x,S,train_set):
     probs = probabilities.Probabilities(S, train_set)
-    print("viterbi")
+    # print("viterbi")
     pi = create_viterbi_table(x, probs)
-    print(pi)
+    # print(pi)
     tag_vec = []
     max_prob = 0
     best_index = 0
     k = -1
-    for i in range(len(pi[k])):
-        prob, previous_ind = pi[k][i]
+    for i in range(len(pi[k])): #starts at the -1 row!
+        prob, previous_ind = pi[k][i] #finds best probabillity there
+        print(pi[k][i])
         if prob > max_prob:
+            best_tuple = pi[k][i]
             best_index = i
             max_prob = prob
 
-    tag_vec.append(S[best_index])
+    # print("Best probability:")
+    # print(pi[k][best_index][1])
+    tag_vec.append(probs.S_list[best_index])
     previous_ind = pi[k][best_index][1]
     k -= 1
     while -k < len(x):
-        print("while")
-        tag_vec.append(S[previous_ind])
+        # print("while")
+        tag_vec.append(probs.S_list[previous_ind])
         previous_ind = pi[k][previous_ind][1]
         k -= 1
 
@@ -199,6 +203,7 @@ def Qc(train_set, test_set):
     for sentence in test_set:
         x = [t[0] for t in sentence]
         viterbi_tags = viterbi(x, S, train_set)
+        print("TAGS")
         print(viterbi_tags)
         viterbi_res.append(viterbi_tags)
 
