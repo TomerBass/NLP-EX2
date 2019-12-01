@@ -1,6 +1,6 @@
 import nltk
 import pandas as pd
-# nltk.download('brown')
+nltk.download('brown')
 from nltk.corpus import brown
 from collections import defaultdict, Counter
 import operator
