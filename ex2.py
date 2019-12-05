@@ -168,6 +168,8 @@ def calculate_error(results, y):
         y {[type]} -- [description]
     """
     correct_answers = 0
+    if (len(y) > len(results)):
+        results.insert(0, "AP") #  TODO add most common tag to the beggining instead of AP
     for i in range(len(results)):
         if results[i] == y[i]:
             correct_answers += 1
