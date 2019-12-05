@@ -99,10 +99,22 @@ def create_viterbi_table(x, probs):
             # TODO yesterday it was inited to NONE and gave errors..
             max_index = 0
             max_value = 0
+            x_k = x[k]
+            S_j = probs.S_list[j]
+            lll = None
+            if x_k == '.' and S_j == '.':
+                j = pi
+                for jj in range(len(x)):
+                    print(jj)
+                    print(max(pi[jj]))
+                lll = 'joe'
+                
             e = probs.e(x[k], probs.S_list[j])
             for i in range(probs.S_len):
                 q = probs.q(probs.S_list[j], probs.S_list[i])
-                # kkk = pi[k-1][i]
+                tup_k_1_i = pi[k-1][i]
+                if lll =='joe' and tup_k_1_i[0] != 0:
+                    kkk = "jim"
                 cur = pi[k-1][i][0] * q * e
                 if cur > max_value:
                     max_value = cur
@@ -111,19 +123,16 @@ def create_viterbi_table(x, probs):
     return pi
 
 
-def viterbi(x, S, train_set):
+def viterbi(x, probs):
     """ A function that runs the Viterbi algorithm.
     
     Arguments:
         x {[List]} -- a list containing all the sentences in the test set.
-        S {[Set]} -- a set of all the tags that exist in the training set.
-        train_set {[list of lists of tuples]} -- the training set viterbi learns
     
     Returns:
         [List] -- a vector (python list) of the POS tags that are the prediction of 
         the viterbi algorithm for the sentence x.
     """
-    probs = Probabilities(S, train_set)
     # print("viterbi")
     pi = create_viterbi_table(x, probs)
     # print(pi)
@@ -133,7 +142,9 @@ def viterbi(x, S, train_set):
     k = -1
     for i in range(len(pi[k])):  # starts at the -1 row!
         prob, previous_ind = pi[k][i]  # finds best probabillity there
-        print(pi[k][i])
+        if prob > 0:
+            hi = 1
+        # print(pi[k][i])
         if prob > max_prob:
             best_tuple = pi[k][i]
             best_index = i
@@ -174,13 +185,15 @@ def initialize_S(train_set):
             S.add(tup[1])
     return S
 
+# def pad_test_set_tags()
 
 def Qc(train_set, test_set):
     S = initialize_S(train_set)  # Rois version
     viterbi_results = []
+    probs = Probabilities(S, train_set, test_set)
     for sentence in test_set:
         x = [t[0] for t in sentence]
-        viterbi_tags = viterbi(x, S, train_set)
+        viterbi_tags = viterbi(x, probs)
         print("TAGS")
         print(viterbi_tags)
         viterbi_results.append(viterbi_tags)
