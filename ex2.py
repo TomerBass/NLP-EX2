@@ -103,12 +103,11 @@ def create_viterbi_table(x, probs):
             S_j = probs.S_list[j]
             lll = None
             if x_k == '.' and S_j == '.':
-                j = pi
                 for jj in range(len(x)):
                     print(jj)
                     print(max(pi[jj]))
                 lll = 'joe'
-                
+
             e = probs.e(x[k], probs.S_list[j])
             for i in range(probs.S_len):
                 q = probs.q(probs.S_list[j], probs.S_list[i])
