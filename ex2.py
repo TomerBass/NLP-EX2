@@ -1,6 +1,7 @@
 import nltk
 # import pandas as pd
 # nltk.download('brown')
+import statistics
 from nltk.corpus import brown
 from collections import defaultdict, Counter
 import operator
@@ -90,19 +91,19 @@ def create_viterbi_table(x, probs):
     pi = []
     # add a row of values 1 as the first row
     pi.append([(1, 0)]*probs.S_len)
-    for k in range(1, len(x)):
+    for k in range(1, len(x)): #0 to 1
         pi.append([(0, 0)]*probs.S_len)
-        for j in range(probs.S_len):
+        for v_index in range(probs.S_len):
             max_index = 0
             max_value = 0
-            e = probs.e(x[k], probs.S_list[j])
-            for i in range(probs.S_len):
-                q = probs.q(probs.S_list[j], probs.S_list[i])
-                cur = pi[k-1][i][0] * q * e
+            e = probs.e(x[k], probs.S_list[v_index])
+            for w_index in range(probs.S_len):
+                q = probs.q(probs.S_list[v_index], probs.S_list[w_index])
+                cur = pi[k-1][w_index][0] * q * e
                 if cur > max_value:
                     max_value = cur
-                    max_index = i  # means i is the best tag!
-            pi[k][j] = (max_value, max_index)
+                    max_index = w_index  # means i is the best tag!
+            pi[k][v_index] = (max_value, max_index)
     return pi
 
 
@@ -168,6 +169,9 @@ def calculate_error(results, y):
         y {[type]} -- [description]
     """
     correct_answers = 0
+    # print("y is bigger in: " + str(len(y)- len(results)))
+    if (len(y)> len(results)):
+        results.insert(0,"AP")
     for i in range(len(results)):
         if results[i] == y[i]:
             correct_answers += 1
@@ -179,14 +183,19 @@ def Qc(train_set, test_set):
     viterbi_results = []
     errors = []
     probs = Probabilities(S, train_set, test_set)
-    for xy_tup in test_set:
-        x = [t[0] for t in xy_tup]
-        y = [t[1] for t in xy_tup]
-        viterbi_tags = viterbi(x, probs)
-        viterbi_results.append(viterbi_tags)
-        errors.append(calculate_error(viterbi_tags, y))
+    # for xy_tup in test_set:
+    # print(test_set[0])
+    xy_tup = test_set[0]
+    x = [t[0] for t in xy_tup]
+    y = [t[1] for t in xy_tup]
+    viterbi_tags = viterbi(x, probs)
+    viterbi_results.append(viterbi_tags)
+    # viterbi_tags.insert(0,"")
+    errors.append(calculate_error(viterbi_tags, y))
+    print(y)
+    print(viterbi_tags)
     print(errors)
-
+    print(statistics.mean(errors))
     
 
 ###################################################################
@@ -200,7 +209,7 @@ def main():
     # a = get_all_tags(train_news)
     # Qb(train_news, test_news)
     Qc(train_set=train_news, test_set=test_news)
-    Qc(train_news, test_news)
+    # Qc(train_news, test_news)
 
 
 if __name__ == '__main__':

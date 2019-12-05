@@ -76,6 +76,7 @@ class Probabilities():
         for xy_tups in test_set:
             for tup in xy_tups:
                 if self.existing_words[tup[0]] == False:
+                    # print(self.existing_words)
                     self.d1[(tup[0], UNKNOWN)] += 1
 
     def e(self, x, y):
