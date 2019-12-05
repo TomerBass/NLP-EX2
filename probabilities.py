@@ -86,6 +86,8 @@ class Probabilities():
         """
         sum_xy = self.d1[(x, y)]
         sum_y = self.d2[y]
+        if sum_xy == 0:
+            return 0
         return float(sum_xy/sum_y)
 
     def q(self, y1, y2):

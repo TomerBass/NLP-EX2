@@ -178,7 +178,7 @@ def Qc(train_set, test_set):
     S = initialize_S(train_set)  # Rois version
     viterbi_results = []
     errors = []
-    probs = Probabilities(S, train_set, test_set)
+    probs = Probabilities(S, train_set=train_set, test_set=test_set)
     for xy_tup in test_set:
         x = [t[0] for t in xy_tup]
         y = [t[1] for t in xy_tup]
