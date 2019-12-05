@@ -89,6 +89,7 @@ def create_viterbi_table(x, probs):
     pi tuples: (value, index)
     """
     pi = []
+    # add a row of values 1 as the first row
     pi.append([(1, 0)]*probs.S_len)
     for k in range(1, len(x)):
         pi.append([(0, 0)]*probs.S_len)
@@ -101,7 +102,7 @@ def create_viterbi_table(x, probs):
             e = probs.e(x[k], probs.S_list[j])
             for i in range(probs.S_len):
                 q = probs.q(probs.S_list[j], probs.S_list[i])
-                kkk = pi[k-1][i]
+                # kkk = pi[k-1][i]
                 cur = pi[k-1][i][0] * q * e
                 if cur > max_value:
                     max_value = cur
