@@ -93,16 +93,12 @@ def create_viterbi_table(x, probs):
     pi.append([(1, 0)]*probs.S_len)
     for k in range(1, len(x)):
         pi.append([(0, 0)]*probs.S_len)
-        # print('k=' + str(k))
         for j in range(probs.S_len):
-            # print("J = " + str(j))
-            # TODO yesterday it was inited to NONE and gave errors..
             max_index = 0
             max_value = 0
             e = probs.e(x[k], probs.S_list[j])
             for i in range(probs.S_len):
                 q = probs.q(probs.S_list[j], probs.S_list[i])
-                tup_k_1_i = pi[k-1][i]
                 cur = pi[k-1][i][0] * q * e
                 if cur > max_value:
                     max_value = cur
@@ -128,16 +124,10 @@ def viterbi(x, probs):
     k = -1
     for i in range(len(pi[k])):  # starts at the -1 row!
         prob, previous_ind = pi[k][i]  # finds best probabillity there
-        if prob > 0:
-            hi = 1
-        # print(pi[k][i])
         if prob > max_prob:
-            best_tuple = pi[k][i]
             best_index = i
             max_prob = prob
 
-    # print("Best probability:")
-    # print(pi[k][best_index][1])
     tag_vec.append(probs.S_list[best_index])
     previous_ind = pi[k][best_index][1]
     k -= 1
@@ -171,7 +161,6 @@ def initialize_S(train_set):
             S.add(tup[1])
     return S
 
-# def pad_test_set_tags()
 
 def Qc(train_set, test_set):
     S = initialize_S(train_set)  # Rois version
