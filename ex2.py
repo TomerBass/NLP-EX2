@@ -99,21 +99,10 @@ def create_viterbi_table(x, probs):
             # TODO yesterday it was inited to NONE and gave errors..
             max_index = 0
             max_value = 0
-            x_k = x[k]
-            S_j = probs.S_list[j]
-            lll = None
-            if x_k == '.' and S_j == '.':
-                for jj in range(len(x)):
-                    print(jj)
-                    print(max(pi[jj]))
-                lll = 'joe'
-
             e = probs.e(x[k], probs.S_list[j])
             for i in range(probs.S_len):
                 q = probs.q(probs.S_list[j], probs.S_list[i])
                 tup_k_1_i = pi[k-1][i]
-                if lll =='joe' and tup_k_1_i[0] != 0:
-                    kkk = "jim"
                 cur = pi[k-1][i][0] * q * e
                 if cur > max_value:
                     max_value = cur
@@ -132,9 +121,7 @@ def viterbi(x, probs):
         [List] -- a vector (python list) of the POS tags that are the prediction of 
         the viterbi algorithm for the sentence x.
     """
-    # print("viterbi")
     pi = create_viterbi_table(x, probs)
-    # print(pi)
     tag_vec = []
     max_prob = 0
     best_index = 0
