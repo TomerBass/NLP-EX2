@@ -69,54 +69,11 @@ def pad_training_set(train_set):
         sentence.insert(0, (START, START))
 
 
-#
-# def arg_max(k, sentence,dynamic_table):
-#     pi(k,sentence[k-1], dynamic_table)
-#
-# def vitarti(sentence):
-#     """
-#     :param sentence: THE INPUT SEMTENCE HAS START AND STOP
-#     :return:
-#     """
-#     n = len(sentence)
-#     dynamic_table = [None]* n
-#     dynamic_table[0] = 1
-#     for k in range(1,n):
-#         max_estimate = 0
-#         for t in avaliable_tags_for_v(v):
-#             cur_pi = pi(k,t)
-#
-#             if cur_pi > max_estimate:
-#                 max_pi = cur_pi
-#
-#         dynamic_table[k] = arg_max(k, sentence[k-1],dynamic_table)
-
 def init_word_set(S):
     dict = {}
     for tag in S:
         dict[tag] = 0
     return dict
-
-
-# def pi(k, v, S, x, train_set):
-#     if k == 1: return 1
-#     word_set = init_word_set(S)
-#     for w in S:
-#         word_set[w] = pi(k-1, w, S, x, train_set) * trans_prob(v, w, S) * emission_prob(x[k], v, train_set)
-#
-#     return max(word_set.items(), key=operator.itemgetter(1))[0]     # return max key by value in word_set
-
-# def viterbi(x, S, train_set):
-#     pi_table = [[]]
-#     n = len(x)
-#     for k in range(n):
-#         for v in S:
-#             pi_table[k][v] = pi(k,v,S,x, train_set=train_set)
-#     possible_tags = init_word_set(S)
-#     for v in S:
-#         possible_tags[v] = pi(n, v, S, x, train_set) * trans_prob(STOP, v, S)
-#
-#     return max(possible_tags.items(), key=operator.itemgetter(1))[0]    # return max key by value in word_set
 
 
 def create_viterbi_table(x, probs):
@@ -222,7 +179,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# df = pd.DataFrame(news,)
-
-
