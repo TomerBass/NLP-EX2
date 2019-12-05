@@ -83,8 +83,7 @@ def init_word_set(S):
 def create_viterbi_table(x, probs):
     """
     :param x: Sentence x1-xn
-    :param S: All possible tags
-    :param train_set: list of sentences
+    :param probs: probability object
     :return: Best next pos
     pi tuples: (value, index)
     """
@@ -136,7 +135,7 @@ def viterbi(x, probs):
         previous_ind = pi[k][previous_ind][1]
         k -= 1
 
-    tag_vec = tag_vec.reverse()
+    tag_vec = tag_vec[::-1]
     return tag_vec
 
 
@@ -161,17 +160,34 @@ def initialize_S(train_set):
             S.add(tup[1])
     return S
 
+def calculate_error(results, y):
+    """ Calculate the error between the results and the actual tags
+    
+    Arguments:
+        results {[type]} -- [description]
+        y {[type]} -- [description]
+    """
+    correct_answers = 0
+    for i in range(len(results)):
+        if results[i] == y[i]:
+            correct_answers += 1
+    return 1 - float(correct_answers/len(results))
+
 
 def Qc(train_set, test_set):
     S = initialize_S(train_set)  # Rois version
     viterbi_results = []
+    errors = []
     probs = Probabilities(S, train_set, test_set)
-    for sentence in test_set:
-        x = [t[0] for t in sentence]
+    for xy_tup in test_set:
+        x = [t[0] for t in xy_tup]
+        y = [t[1] for t in xy_tup]
         viterbi_tags = viterbi(x, probs)
-        print("TAGS")
-        print(viterbi_tags)
         viterbi_results.append(viterbi_tags)
+        errors.append(calculate_error(viterbi_tags, y))
+    print(errors)
+
+    
 
 ###################################################################
 
