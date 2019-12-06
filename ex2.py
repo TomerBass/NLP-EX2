@@ -80,7 +80,7 @@ def init_word_set(S):
     return dict
 
 
-def create_viterbi_table(x, probs, laplace = False):
+def create_viterbi_table(x, probs, laplace=False):
     """
     :param x: Sentence x1-xn
     :param probs: probability object
@@ -88,9 +88,8 @@ def create_viterbi_table(x, probs, laplace = False):
     pi tuples: (value, index)
     """
     pi = []
-    # add a row of values 1 as the first row
     pi.append([(1, 0)]*probs.S_len)
-    for k in range(1, len(x)): #0 to 1
+    for k in range(1, len(x)):
         pi.append([(0, 0)]*probs.S_len)
         for v_index in range(probs.S_len):
             max_index = 0
@@ -106,12 +105,12 @@ def create_viterbi_table(x, probs, laplace = False):
     return pi
 
 
-def viterbi(x, probs, laplace = False):
+def viterbi(x, probs, laplace=False):
     """ A function that runs the Viterbi algorithm.
-    
+
     Arguments:
         x {[List]} -- a list containing all the sentences in the test set.
-    
+
     Returns:
         [List] -- a vector (python list) of the POS tags that are the prediction of 
         the viterbi algorithm for the sentence x.
@@ -127,6 +126,7 @@ def viterbi(x, probs, laplace = False):
             best_index = i
             max_prob = prob
 
+    # traverse the pi table
     tag_vec.append(probs.S_list[best_index])
     previous_ind = pi[k][best_index][1]
     k -= 1
@@ -153,26 +153,26 @@ def initialize_S(train_set):
     Arguments:
         train_set {[type]} -- the training set.
     """
-#   TODO  add from test set with unknown tag as well??
     S = set()
     for sentence in train_set:
         for tup in sentence:
             S.add(tup[1])
     return S
 
+
 def calculate_error(results, y):
     """ Calculate the error between the results and the actual tags
-    
+
     Arguments:
         results {[type]} -- [description]
         y {[type]} -- [description]
     """
     correct_answers = 0
-    # print("y is bigger in: " + str(len(y)- len(results)))
-    if (len(y)> len(results)):
-        results.insert(0,"AP")
     if (len(y) > len(results)):
-        results.insert(0, "AP") #  TODO add most common tag to the beggining instead of AP
+        results.insert(0, "AP")
+    if (len(y) > len(results)):
+        # TODO add most common tag to the beggining instead of AP
+        results.insert(0, "AP")
     for i in range(len(results)):
         if results[i] == y[i]:
             correct_answers += 1
@@ -184,10 +184,11 @@ def clean_POS(sentence_set):
     e.g. PPS+BEZ -> PPS
 
     Arguments:
-        xy_tups {[type]} -- [description]
+        sentence_set {[list]} -- a set of tagged sentences (usually 
+        either the training or test set)
 
     Returns:
-        [type] -- [description]
+        [list] -- a "cleaned" set of sentences
     """
     clean_set = []
     for xy_tups in sentence_set:
@@ -198,12 +199,22 @@ def clean_POS(sentence_set):
         clean_set.append(clean_xy_tups)
     return clean_set
 
-def Qc(train_set, test_set, laplace = False):
+
+def Qc(train_set, test_set, laplace=False):
+    """Handles the tasks of question c
+
+    Arguments:
+        train_set
+        test_set 
+
+    Keyword Arguments:
+        laplace {bool} -- are we to use Laplace smoothing or not (default: {False})
+    """
     viterbi_results = []
     errors = []
     train_set = clean_POS(train_set)
     test_set = clean_POS(test_set)
-    S = initialize_S(train_set)  # Rois version
+    S = initialize_S(train_set)
     probs = Probabilities(S, train_set=train_set, test_set=test_set)
     for xy_tup in test_set:
         x = [t[0] for t in xy_tup]
@@ -214,44 +225,63 @@ def Qc(train_set, test_set, laplace = False):
     print(errors)
     print(statistics.mean(errors))
 
-###################################################################
+##################### QUESTION D ##################################
+
+
 def Qd(train_set, test_set):
+    """Simply run Qc (viterbi) with laplace smoothing
+    """
     Qc(train_set, test_set, True)
 
 ###################################################################
 
-# def confusion_matrix(d_true_tags, d_predicted_tags, probs):
-#     confusion = []
-#     for i in range(len(d_true_tags)):
-#         row = []
-#         for j in range(len(d_predicted_tags)):
-#             row.append(probs.get_confusion_value(d_true_tags[i], d_predicted_tags[j]))
-#         confusion.append(row)
-#     return confusion
 
-def confusion_matrix(pseudo_S, pseudo_probs):
-    pseudo_S = list(pseudo_S)
+def confusion_matrix(S, pseudo_probs):
+    """create the confusion matrix 
+
+    Arguments:
+        S {[set]} -- a set of tags including the pseudo tags
+        pseudo_probs {[type]} -- [description]
+
+    Returns:
+        [2D array] -- the confusion matrix
+    """
+    S = list(S)
     confusion = []
-    for i in range(len(pseudo_S)):
+    for i in range(len(S)):
         row = []
-        for j in range(len(pseudo_S)):
-            row.append(pseudo_probs.get_confusion_value(pseudo_S[i], pseudo_S[j]))
+        for j in range(len(S)):
+            row.append(pseudo_probs.get_confusion_value(
+                S[i], S[j]))
         confusion.append(row)
     return confusion
 
 
-def Qe(train_set, test_set, laplace = False):
+def Qe(train_set, test_set, laplace=False):
+    """Handles tasks of question e
+
+    Arguments:
+        train_set 
+        test_set 
+
+    Keyword Arguments:
+        laplace {bool} -- (default: {False})
+    """
+    # initializations
     viterbi_results = []
     errors = []
     S = initialize_S(train_set)
-    probs = Probabilities(S, train_set,test_set)
+    probs = Probabilities(S, train_set, test_set)
+
+    # "clean" the train and test sets from complex tags
     train_set = clean_POS(train_set)
     test_set = clean_POS(test_set)
+
+    # Generate pseudo train and test sets and probability object
     pseudo_train = probs.generate_pseudo_set(train_set)
     pseudo_test = probs.generate_pseudo_set(test_set)
+    pseudo_probs = Probabilities(S, pseudo_train, pseudo_test)
 
-    pseudo_S = initialize_S(pseudo_train)
-    pseudo_probs = Probabilities(pseudo_S, pseudo_train, pseudo_test)
     for xy_tup in pseudo_test:
         x = [t[0] for t in xy_tup]
         y = [t[1] for t in xy_tup]
@@ -260,14 +290,18 @@ def Qe(train_set, test_set, laplace = False):
         errors.append(calculate_error(viterbi_tags, y))
         # update confusion values
         pseudo_probs.update_confusion_matrix(y, viterbi_tags)
+
+    # print results and statistics
     print(errors)
     print(statistics.mean(errors))
-    print(DataFrame(confusion_matrix(pseudo_S, pseudo_probs)))
+    print(DataFrame(confusion_matrix(S, pseudo_probs)))
 
+
+def Qe_Laplace(train_set, test_set):
+    Qe(train_set, test_set, True)
 
 ####################################################################
-def Qe_Laplace(train_set,test_set):
-    Qe(train_set,test_set, True)
+
 
 def main():
     tagged_news = (brown.tagged_sents(categories='news'))

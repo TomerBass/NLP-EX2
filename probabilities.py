@@ -32,7 +32,9 @@ class Probabilities():
 
         # {pos: count} missing first words of each sentence
         self.d4 = defaultdict(int)
+        #######################################
 
+        # all distinct words
         self.distinct_words = set()
 
         # non exisiting words or words that apeared less than threshold
@@ -40,6 +42,8 @@ class Probabilities():
 
         # count of each word
         self.word_count = defaultdict(int)
+
+        # initialization of sets and dictionaries
         self.generate_existing_words(train_set, test_set)
         self.generate_dictionaries(train_set)
         self.add_unknown_words(test_set)
@@ -48,7 +52,9 @@ class Probabilities():
         self.confusion_dict = defaultdict(int)
 
     def generate_dictionaries(self, train_set):
-        """Fills in dictionaries 1-4 (i.e., the emission and tranition dictionaries)"""
+        """Fills in dictionaries 1-4 (i.e., the emission and tranition dictionaries),
+        as well as word count and distinct word dictionaries.
+        """
         for xy_tups in train_set:
             for i in range(len(xy_tups)):
                 word = xy_tups[i][0]
@@ -95,7 +101,6 @@ class Probabilities():
         for xy_tups in test_set:
             for tup in xy_tups:
                 if self.existing_words[tup[0]] == False:
-                    # print(self.existing_words)
                     self.d1[(tup[0], UNKNOWN)] += 1
 
     def e(self, x, y, laplace=False):
@@ -155,6 +160,12 @@ class Probabilities():
         return new_set
 
     def update_confusion_matrix(self, true_tags, predicted_tags):
+        """Updates the confusion matrix with true tags and predicted results
+
+        Arguments:
+            true_tags {[list]} -- a list of true tags for some sentance.
+            predicted_tags {[type]} -- a list of predicted tags for the SAME sentence
+        """
         assert len(true_tags) == len(predicted_tags)
 
         for i in range(len(true_tags)):
