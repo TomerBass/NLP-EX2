@@ -1,17 +1,13 @@
 import re
-
 import nltk
-# import pandas as pd
 # nltk.download('brown')
 import statistics
 from nltk.corpus import brown
 from collections import defaultdict, Counter
-import operator
 from pandas import *
 from probabilities import Probabilities
 
-START, STOP = "START", "STOP"
-DYNAMIC_STOP = "*"
+START = "START"
 
 ################# QUESTION b##################################
 
