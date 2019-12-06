@@ -1,4 +1,4 @@
-from collections import defaultdict, Counter
+from collections import defaultdict
 
 START = "START"
 UNKNOWN = 'NN'
@@ -35,17 +35,17 @@ class Probabilities():
 
         self.distinct_words = set()
 
-        #non exisiting words or words that apeared less than threshold
+        # non exisiting words or words that apeared less than threshold
         self.low_frequency_words = set()
 
-        #count of each word
+        # count of each word
         self.word_count = defaultdict(int)
         self.generate_existing_words(train_set, test_set)
         self.generate_dictionaries(train_set)
         self.add_unknown_words(test_set)
         self.generate_low_freq_dictionary()
         self.delta = 1
-
+        self.confusion_dict = defaultdict(int)
 
     def generate_dictionaries(self, train_set):
         """Fills in dictionaries 1-4 (i.e., the emission and tranition dictionaries)"""
@@ -58,7 +58,7 @@ class Probabilities():
                 self.d1[(word, pos)] += 1
                 self.d2[pos] += 1
                 if i != 1:
-                    prev_pos = xy_tups[i-1][1]
+                    prev_pos = xy_tups[i - 1][1]
                     self.d3[(pos, prev_pos)] += 1
                     self.d4[pos] += 1
 
@@ -79,7 +79,7 @@ class Probabilities():
             for tup in xy_tups:
                 self.existing_words[tup[0]] = True
 
-    def generate_low_freq_dictionary(self, thres = 3):
+    def generate_low_freq_dictionary(self, thres=3):
         for word in self.existing_words:
             if self.existing_words[word] == False:
                 self.low_frequency_words.add(word)
@@ -98,10 +98,7 @@ class Probabilities():
                     # print(self.existing_words)
                     self.d1[(tup[0], UNKNOWN)] += 1
 
-
-
-
-    def e(self, x, y, laplace = False):
+    def e(self, x, y, laplace=False):
         """
         :param x: word
         :param y: POS
@@ -113,8 +110,8 @@ class Probabilities():
             return 0
         if laplace:
             sum_xy += self.delta
-            sum_y += self.delta*len(self.distinct_words)
-        return float(sum_xy/sum_y)
+            sum_y += self.delta * len(self.distinct_words)
+        return float(sum_xy / sum_y)
 
     def q(self, y1, y2):
         """
@@ -124,7 +121,7 @@ class Probabilities():
         """
         if self.d3[(y1, y2)] == 0:
             return 0
-        return float(self.d3[(y1, y2)]/self.d4[y1])
+        return float(self.d3[(y1, y2)] / self.d4[y1])
 
     def tag_word(self, word, index_in_sent):
         """
@@ -147,17 +144,21 @@ class Probabilities():
         new_set = []
         for xy_tups in t_set:
             new_sent = []
-            for i,tup in enumerate(xy_tups):
+            for i, tup in enumerate(xy_tups):
                 word = xy_tups[i][0]
                 pos = xy_tups[i][1]
-                if (word in self.low_frequency_words) or self.existing_words[word] == False:
-                    word = self.tag_word(word,i)
-                new_sent.append((word,pos))
+                if (word in self.low_frequency_words) or self.existing_words[word] is False:
+                    word = self.tag_word(word, i)
+                new_sent.append((word, pos))
             new_set.append(new_sent)
 
         return new_set
 
+    def update_confusion_matrix(self, true_tags, predicted_tags):
+        assert len(true_tags) == len(predicted_tags)
 
+        for i in range(len(true_tags)):
+            self.confusion_dict[(true_tags[i], predicted_tags[i])] += 1
 
-
-
+    def get_confusion_value(self, tag_i, tag_j):
+        return self.confusion_dict[(tag_i, tag_j)]

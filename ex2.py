@@ -7,6 +7,7 @@ import statistics
 from nltk.corpus import brown
 from collections import defaultdict, Counter
 import operator
+from pandas import *
 from probabilities import Probabilities
 
 START, STOP = "START", "STOP"
@@ -222,6 +223,27 @@ def Qd(train_set, test_set):
     Qc(train_set, test_set, True)
 
 ###################################################################
+
+# def confusion_matrix(d_true_tags, d_predicted_tags, probs):
+#     confusion = []
+#     for i in range(len(d_true_tags)):
+#         row = []
+#         for j in range(len(d_predicted_tags)):
+#             row.append(probs.get_confusion_value(d_true_tags[i], d_predicted_tags[j]))
+#         confusion.append(row)
+#     return confusion
+
+def confusion_matrix(pseudo_S, pseudo_probs):
+    pseudo_S = list(pseudo_S)
+    confusion = []
+    for i in range(len(pseudo_S)):
+        row = []
+        for j in range(len(pseudo_S)):
+            row.append(pseudo_probs.get_confusion_value(pseudo_S[i], pseudo_S[j]))
+        confusion.append(row)
+    return confusion
+
+
 def Qe(train_set, test_set, laplace = False):
     viterbi_results = []
     errors = []
@@ -240,8 +262,13 @@ def Qe(train_set, test_set, laplace = False):
         viterbi_tags = viterbi(x, pseudo_probs, laplace)
         viterbi_results.append(viterbi_tags)
         errors.append(calculate_error(viterbi_tags, y))
+        # update confusion values
+        pseudo_probs.update_confusion_matrix(y, viterbi_tags)
     print(errors)
     print(statistics.mean(errors))
+    print(DataFrame(confusion_matrix(pseudo_S, pseudo_probs)))
+
+
 ####################################################################
 def Qe_Laplace(train_set,test_set):
     Qe(train_set,test_set, True)
@@ -257,7 +284,7 @@ def main():
     # Qd(train_set=train_news, test_set=test_news)
     # Qd(train_news, test_news)
     # Qe(train_news,test_news)
-    Qe_Laplace(train_news,test_news)
+    Qe_Laplace(train_news, test_news)
 
 
 if __name__ == '__main__':
