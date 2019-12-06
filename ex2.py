@@ -61,7 +61,7 @@ def Qb(train_news, test_news):
     train_dict = generate_dictionary(train_news)
     max_pos_train = get_mle_train(train_dict)
     error = calc_test_error(test_news, max_pos_train)
-    print(error)
+    return error
 
 
 ################# QUESTION C ##################################
@@ -222,8 +222,7 @@ def Qc(train_set, test_set, laplace=False):
         viterbi_tags = viterbi(x, probs, laplace)
         viterbi_results.append(viterbi_tags)
         errors.append(calculate_error(viterbi_tags, y))
-    print(errors)
-    print(statistics.mean(errors))
+    return (statistics.mean(errors))
 
 ##################### QUESTION D ##################################
 
@@ -231,7 +230,7 @@ def Qc(train_set, test_set, laplace=False):
 def Qd(train_set, test_set):
     """Simply run Qc (viterbi) with laplace smoothing
     """
-    Qc(train_set, test_set, True)
+    return Qc(train_set, test_set, True)
 
 ###################################################################
 
@@ -270,13 +269,13 @@ def Qe(train_set, test_set, laplace=False):
     # initializations
     viterbi_results = []
     errors = []
-    S = initialize_S(train_set)
-    probs = Probabilities(S, train_set, test_set)
 
     # "clean" the train and test sets from complex tags
     train_set = clean_POS(train_set)
     test_set = clean_POS(test_set)
 
+    S = initialize_S(train_set)
+    probs = Probabilities(S, train_set, test_set)
     # Generate pseudo train and test sets and probability object
     pseudo_train = probs.generate_pseudo_set(train_set)
     pseudo_test = probs.generate_pseudo_set(test_set)
@@ -292,29 +291,40 @@ def Qe(train_set, test_set, laplace=False):
         pseudo_probs.update_confusion_matrix(y, viterbi_tags)
 
     # print results and statistics
-    print(errors)
-    print(statistics.mean(errors))
-    print(DataFrame(confusion_matrix(S, pseudo_probs)))
+    if laplace:
+        print(DataFrame(confusion_matrix(S, pseudo_probs)))
+    return (statistics.mean(errors))
 
 
 def Qe_Laplace(train_set, test_set):
-    Qe(train_set, test_set, True)
+    return Qe(train_set, test_set, True)
 
 ####################################################################
 
+def plot_graphs(train_set,test_set):
+    from matplotlib import pyplot as plt
+    import numpy as np
+
+    tests = ('Viterbi','Viterbi+HMM','Viterbi+\nLaplace','Pseudo\nwords','Pseudo words\n+Laplace')
+
+    y_pos = np.arange(len(tests))
+    qb_err = Qb(train_set, test_set) #add return to each function
+    qc_err = Qc(train_set, test_set)
+    qd_err = Qd(train_set, test_set)
+    qe_err = Qe(train_set, test_set)
+    qe_lap_err = Qe_Laplace(train_set, test_set)
+    performance = [qb_err,qc_err,qd_err,qe_err,qe_lap_err]
+    plt.bar(y_pos,performance, align='center', alpha = 0.5)
+    plt.xticks(y_pos, tests)
+    plt.ylabel("Error rate")
+    plt.show()
 
 def main():
     tagged_news = (brown.tagged_sents(categories='news'))
     threshold = int(len(tagged_news) * 0.1)
     train_news = tagged_news[:-threshold]
     test_news = tagged_news[-threshold:]
-    # print(train_news)
-    # a = get_all_tags(train_news)
-    # Qb(train_news, test_news)
-    # Qd(train_set=train_news, test_set=test_news)
-    # Qd(train_news, test_news)
-    # Qe(train_news,test_news)
-    Qe_Laplace(train_news, test_news)
+    plot_graphs(train_news, test_news)
 
 
 if __name__ == '__main__':
