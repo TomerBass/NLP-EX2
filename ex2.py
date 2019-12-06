@@ -1,3 +1,5 @@
+import re
+
 import nltk
 # import pandas as pd
 # nltk.download('brown')
@@ -81,7 +83,7 @@ def init_word_set(S):
     return dict
 
 
-def create_viterbi_table(x, probs):
+def create_viterbi_table(x, probs, laplace = False):
     """
     :param x: Sentence x1-xn
     :param probs: probability object
@@ -96,7 +98,7 @@ def create_viterbi_table(x, probs):
         for v_index in range(probs.S_len):
             max_index = 0
             max_value = 0
-            e = probs.e(x[k], probs.S_list[v_index])
+            e = probs.e(x[k], probs.S_list[v_index], laplace)
             for w_index in range(probs.S_len):
                 q = probs.q(probs.S_list[v_index], probs.S_list[w_index])
                 cur = pi[k-1][w_index][0] * q * e
@@ -107,7 +109,7 @@ def create_viterbi_table(x, probs):
     return pi
 
 
-def viterbi(x, probs):
+def viterbi(x, probs, laplace = False):
     """ A function that runs the Viterbi algorithm.
     
     Arguments:
@@ -117,7 +119,7 @@ def viterbi(x, probs):
         [List] -- a vector (python list) of the POS tags that are the prediction of 
         the viterbi algorithm for the sentence x.
     """
-    pi = create_viterbi_table(x, probs)
+    pi = create_viterbi_table(x, probs, laplace)
     tag_vec = []
     max_prob = 0
     best_index = 0
@@ -172,44 +174,90 @@ def calculate_error(results, y):
     # print("y is bigger in: " + str(len(y)- len(results)))
     if (len(y)> len(results)):
         results.insert(0,"AP")
+    if (len(y) > len(results)):
+        results.insert(0, "AP") #  TODO add most common tag to the beggining instead of AP
     for i in range(len(results)):
         if results[i] == y[i]:
             correct_answers += 1
     return 1 - float(correct_answers/len(results))
 
 
-def Qc(train_set, test_set):
-    S = initialize_S(train_set)  # Rois version
+def clean_POS(sentence_set):
+    """updates complex POS tags to be the prefix of the original.
+    e.g. PPS+BEZ -> PPS
+
+    Arguments:
+        xy_tups {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    clean_set = []
+    for xy_tups in sentence_set:
+        clean_xy_tups = []
+        for word, pos in xy_tups:
+            pos = re.split('\+|\-', pos)[0]
+            clean_xy_tups.append((word, pos))
+        clean_set.append(clean_xy_tups)
+    return clean_set
+
+def Qc(train_set, test_set, laplace = False):
     viterbi_results = []
     errors = []
-    probs = Probabilities(S, train_set, test_set)
-    # for xy_tup in test_set:
-    # print(test_set[0])
-    xy_tup = test_set[0]
-    x = [t[0] for t in xy_tup]
-    y = [t[1] for t in xy_tup]
-    viterbi_tags = viterbi(x, probs)
-    viterbi_results.append(viterbi_tags)
-    # viterbi_tags.insert(0,"")
-    errors.append(calculate_error(viterbi_tags, y))
-    print(y)
-    print(viterbi_tags)
+    train_set = clean_POS(train_set)
+    test_set = clean_POS(test_set)
+    S = initialize_S(train_set)  # Rois version
+    probs = Probabilities(S, train_set=train_set, test_set=test_set)
+    for xy_tup in test_set:
+        x = [t[0] for t in xy_tup]
+        y = [t[1] for t in xy_tup]
+        viterbi_tags = viterbi(x, probs, laplace)
+        viterbi_results.append(viterbi_tags)
+        errors.append(calculate_error(viterbi_tags, y))
     print(errors)
     print(statistics.mean(errors))
-    
 
 ###################################################################
+def Qd(train_set, test_set):
+    Qc(train_set, test_set, True)
 
+###################################################################
+def Qe(train_set, test_set, laplace = False):
+    viterbi_results = []
+    errors = []
+    S = initialize_S(train_set)
+    probs = Probabilities(S, train_set,test_set)
+    train_set = clean_POS(train_set)
+    test_set = clean_POS(test_set)
+    pseudo_train = probs.generate_pseudo_set(train_set)
+    pseudo_test = probs.generate_pseudo_set(test_set)
+
+    pseudo_S = initialize_S(pseudo_train)
+    pseudo_probs = Probabilities(pseudo_S, pseudo_train, pseudo_test)
+    for xy_tup in pseudo_test:
+        x = [t[0] for t in xy_tup]
+        y = [t[1] for t in xy_tup]
+        viterbi_tags = viterbi(x, pseudo_probs, laplace)
+        viterbi_results.append(viterbi_tags)
+        errors.append(calculate_error(viterbi_tags, y))
+    print(errors)
+    print(statistics.mean(errors))
+####################################################################
+def Qe_Laplace(train_set,test_set):
+    Qe(train_set,test_set, True)
 
 def main():
     tagged_news = (brown.tagged_sents(categories='news'))
     threshold = int(len(tagged_news) * 0.1)
     train_news = tagged_news[:-threshold]
     test_news = tagged_news[-threshold:]
+    # print(train_news)
     # a = get_all_tags(train_news)
     # Qb(train_news, test_news)
-    Qc(train_set=train_news, test_set=test_news)
-    # Qc(train_news, test_news)
+    # Qd(train_set=train_news, test_set=test_news)
+    # Qd(train_news, test_news)
+    # Qe(train_news,test_news)
+    Qe_Laplace(train_news,test_news)
 
 
 if __name__ == '__main__':
