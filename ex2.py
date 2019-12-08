@@ -6,6 +6,9 @@ from nltk.corpus import brown
 from collections import defaultdict, Counter
 from pandas import *
 from probabilities import Probabilities
+from matplotlib import pyplot as plt
+import numpy as np
+
 
 START = "START"
 
@@ -31,37 +34,57 @@ def get_mle_train(words_dict):
 
 
 def add_unknowns(test_set, max_pos_train):
+    unknown_set = set()
     for sentence in test_set:
         for word, pos in sentence:
             if word in max_pos_train.keys():
                 continue
+            unknown_set.add(word)
             max_pos_train[word] = 'NN'
-    return max_pos_train
+    return max_pos_train, unknown_set
 
 
-def get_accuracy(test_set, max_pos_train):
+def get_accuracy_B(test_set, max_pos_train, unknown_set):
+    known_positive = 0
+    total_known = 0
+    unknown_positive = 0
+    total_unknown = 1
     true_positive = 0
     total_num_of_words = 0
     for sentence in test_set:
         for word, pos in sentence:
+            good_tag = 0
             if pos == max_pos_train[word]:
                 true_positive += 1
+                good_tag = 1
+            if word not in unknown_set: #if known
+                total_known += 1
+                known_positive += good_tag
+            else:
+                total_unknown += 1
+                unknown_positive += 1
             total_num_of_words += 1
-    return (true_positive/total_num_of_words)
+    gen_acc = true_positive/total_num_of_words
+    known_acc = known_positive/total_known
+    unknown_acc = unknown_positive/total_unknown
+    return [gen_acc, known_acc, unknown_acc]
 
 
 def calc_test_error(test_set, max_pos_train):
     """Calculate 1-accuracy"""
-    max_pos_train = add_unknowns(test_set, max_pos_train)
-    err_rate = 1 - get_accuracy(test_set, max_pos_train)
-    return err_rate
+    max_pos_train , unknowns_set = add_unknowns(test_set, max_pos_train)
+    all_acc = get_accuracy_B(test_set, max_pos_train,unknowns_set)
+    gen_error = 1 - all_acc[0]
+    known_error = 1- all_acc[1]
+    unknown_error = 1 - all_acc[2]
+    return [gen_error, known_error, unknown_error]
 
 
 def Qb(train_news, test_news):
     train_dict = generate_dictionary(train_news)
     max_pos_train = get_mle_train(train_dict)
-    error = calc_test_error(test_news, max_pos_train)
-    return error
+    err_vector = calc_test_error(test_news, max_pos_train)
+    return err_vector
 
 
 ################# QUESTION C ##################################
@@ -160,23 +183,53 @@ def initialize_S(train_set):
     return S
 
 
-def calculate_error(results, y):
+def calculate_error(results, y, sent, probs, qe = False):
     """ Calculate the error between the results and the actual tags
 
     Arguments:
         results {[type]} -- [description]
         y {[type]} -- [description]
     """
+    known_0 = False
+    unknown_0 = False
+    total_correct = 0
     correct_answers = 0
+    known_correct = 0
+    unknowns_correct = 0
+    total_words = 0
+    total_known = 0
+    total_unknown = 0
+
     if (len(y) > len(results)):
         results.insert(0, "AP")
     if (len(y) > len(results)):
         # TODO add most common tag to the beggining instead of AP
         results.insert(0, "AP")
     for i in range(len(results)):
+        good_tag = 0
         if results[i] == y[i]:
             correct_answers += 1
-    return 1 - float(correct_answers/len(results))
+            good_tag = 1
+        if not qe:
+            if probs.existing_words[sent[i]]: #if known
+                total_known += 1
+                known_correct += good_tag
+            else:
+                total_unknown += 1
+                unknowns_correct += good_tag
+
+    if total_known == 0:
+        total_known = 1
+        known_0 = True
+    if total_unknown ==0:
+        total_unknown = 1
+        unknown_0 = True
+
+    gen_error = 1 - float(correct_answers/len(results))
+    known_error = 1 - float(known_correct/total_known)
+    unknown_err = 1 - float(unknowns_correct/total_unknown)
+
+    return [gen_error, known_error, unknown_err], known_0, unknown_0
 
 
 def clean_POS(sentence_set):
@@ -210,8 +263,11 @@ def Qc(train_set, test_set, laplace=False):
     Keyword Arguments:
         laplace {bool} -- are we to use Laplace smoothing or not (default: {False})
     """
+    gen_error_vec = []
+    known_error_vec = []
+    unknown_error_vec = []
+
     viterbi_results = []
-    errors = []
     train_set = clean_POS(train_set)
     test_set = clean_POS(test_set)
     S = initialize_S(train_set)
@@ -221,8 +277,14 @@ def Qc(train_set, test_set, laplace=False):
         y = [t[1] for t in xy_tup]
         viterbi_tags = viterbi(x, probs, laplace)
         viterbi_results.append(viterbi_tags)
-        errors.append(calculate_error(viterbi_tags, y))
-    return (statistics.mean(errors))
+        err_vec, known_0, unknonwn_0 = (calculate_error(viterbi_tags, y, x, probs))
+        gen_error_vec.append(err_vec[0])
+        if not known_0: known_error_vec.append(err_vec[1])
+        if not unknonwn_0: unknown_error_vec.append(err_vec[2])
+    gen_error = statistics.mean(gen_error_vec)
+    known_error = statistics.mean(known_error_vec)
+    unknown_error = statistics.mean(unknown_error_vec)
+    return [gen_error, known_error, unknown_error]
 
 ##################### QUESTION D ##################################
 
@@ -268,9 +330,12 @@ def Qe(train_set, test_set, laplace=False):
     """
     # initializations
     viterbi_results = []
-    errors = []
+    gen_error_vec = []
+    known_error_vec = []
+    unknown_error_vec = []
 
-    # "clean" the train and test sets from complex tags
+
+# "clean" the train and test sets from complex tags
     train_set = clean_POS(train_set)
     test_set = clean_POS(test_set)
 
@@ -280,20 +345,21 @@ def Qe(train_set, test_set, laplace=False):
     pseudo_train = probs.generate_pseudo_set(train_set)
     pseudo_test = probs.generate_pseudo_set(test_set)
     pseudo_probs = Probabilities(S, pseudo_train, pseudo_test)
-
     for xy_tup in pseudo_test:
         x = [t[0] for t in xy_tup]
         y = [t[1] for t in xy_tup]
         viterbi_tags = viterbi(x, pseudo_probs, laplace)
         viterbi_results.append(viterbi_tags)
-        errors.append(calculate_error(viterbi_tags, y))
+        err_vec, _, _ = (calculate_error(viterbi_tags, y, x, probs, True))
+        gen_error_vec.append(err_vec[0])
         # update confusion values
         pseudo_probs.update_confusion_matrix(y, viterbi_tags)
-
+    gen_error = statistics.mean(gen_error_vec)
+    print(gen_error)
     # print results and statistics
     if laplace:
         print(DataFrame(confusion_matrix(S, pseudo_probs)))
-    return (statistics.mean(errors))
+    return gen_error
 
 
 def Qe_Laplace(train_set, test_set):
@@ -302,22 +368,23 @@ def Qe_Laplace(train_set, test_set):
 ####################################################################
 
 def plot_graphs(train_set,test_set):
-    from matplotlib import pyplot as plt
-    import numpy as np
+    errs_for_first_3 = ('General Error','Known Words error','Unknown words error')
+    plot_errors(train_set, test_set, "MLE estimation", Qb, errs_for_first_3)
+    plot_errors(train_set, test_set, "Viterbi+ HMM", Qc, errs_for_first_3)
+    plot_errors(train_set, test_set, "Viterbi+ Laplace", Qd, errs_for_first_3)
+    plot_errors(train_set, test_set, "Pseudo-words tagging", Qe, ['General Error'])
+    plot_errors(train_set, test_set, "Pseudo-words + Laplace", Qe_Laplace, ['General error'])
 
-    tests = ('Viterbi','Viterbi+HMM','Viterbi+\nLaplace','Pseudo\nwords','Pseudo words\n+Laplace')
 
-    y_pos = np.arange(len(tests))
-    qb_err = Qb(train_set, test_set) #add return to each function
-    qc_err = Qc(train_set, test_set)
-    qd_err = Qd(train_set, test_set)
-    qe_err = Qe(train_set, test_set)
-    qe_lap_err = Qe_Laplace(train_set, test_set)
-    performance = [qb_err,qc_err,qd_err,qe_err,qe_lap_err]
+def plot_errors(train_set, test_set, name, func, errs):
+    y_pos = np.arange(len(errs))
+    performance = func(train_set,test_set)
     plt.bar(y_pos,performance, align='center', alpha = 0.5)
-    plt.xticks(y_pos, tests)
+    plt.xticks(y_pos, errs)
     plt.ylabel("Error rate")
+    plt.title(name)
     plt.show()
+
 
 def main():
     tagged_news = (brown.tagged_sents(categories='news'))
