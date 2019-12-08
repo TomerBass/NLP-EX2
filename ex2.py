@@ -45,10 +45,12 @@ def add_unknowns(test_set, max_pos_train):
 
 
 def get_accuracy_B(test_set, max_pos_train, unknown_set):
+    unknown_0 = False
+    known_0 = False
     known_positive = 0
     total_known = 0
     unknown_positive = 0
-    total_unknown = 1
+    total_unknown = 0
     true_positive = 0
     total_num_of_words = 0
     for sentence in test_set:
@@ -62,8 +64,16 @@ def get_accuracy_B(test_set, max_pos_train, unknown_set):
                 known_positive += good_tag
             else:
                 total_unknown += 1
-                unknown_positive += 1
+                unknown_positive += good_tag
             total_num_of_words += 1
+
+    # if total_unknown == 0:
+    #     total_unknown = 1
+    #     unknown_0 = True
+    # if total_known == 0:
+    #     total_known = 1
+    #     known_0 = True
+
     gen_acc = true_positive/total_num_of_words
     known_acc = known_positive/total_known
     unknown_acc = unknown_positive/total_unknown
